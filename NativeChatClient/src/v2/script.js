@@ -37,8 +37,12 @@ let credentials = {};
 // This flag helps us know when it's safe to start the chat
 let hasReceivedConfig = false;
 let hasReceivedCredentials = false;
+let hasStartedNativeChat = false;
+const nativeChatProtocolVersion = 1;
+const nativeChatHost = window.chrome && window.chrome.webview ? window.chrome.webview : null;
 
-window.chrome.webview.addEventListener('message', event => {
+if (nativeChatHost) {
+nativeChatHost.addEventListener('message', event => {
   // The event.data contains the JSON string sent from C#
   const message = event.data; // event.data is already a JS object
   
@@ -53,7 +57,7 @@ window.chrome.webview.addEventListener('message', event => {
       case 'credentials':
           credentials = message.payload;
           hasReceivedCredentials = true;
-          console.log("Credentials received:", credentials);
+          console.log("Credentials received.");
           break;
           
       default:
@@ -62,15 +66,33 @@ window.chrome.webview.addEventListener('message', event => {
   }
 
   // Only connect after both objects have been received
-  if (hasReceivedConfig && hasReceivedCredentials) {
+  if (hasReceivedConfig && hasReceivedCredentials && !hasStartedNativeChat) {
+      hasStartedNativeChat = true;
       console.log(`All data received. Connecting to channel: ${config.channel}`);
       
       // Apply the settings and connect
       Chat.applySettings(config);
       Chat.connect(config.channel);
-      generateTestMessages(10);
   }
 });
+} else {
+  console.warn("NativeChat host bridge is unavailable.");
+}
+
+function notifyNativeChatReady() {
+  if (nativeChatHost) {
+    nativeChatHost.postMessage({
+      type: "NativeChatReady",
+      protocolVersion: nativeChatProtocolVersion
+    });
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", notifyNativeChatReady, { once: true });
+} else {
+  notifyNativeChatReady();
+}
 
 Chat = {
   info: {
@@ -1748,7 +1770,9 @@ Chat = {
         // });
       }
 
-      message = twemoji.parse(message);
+      if (window.twemoji && typeof window.twemoji.parse === "function") {
+        message = window.twemoji.parse(message);
+      }
       $message.html(message);
 
       if (Chat.info.bigSoloEmotes) {

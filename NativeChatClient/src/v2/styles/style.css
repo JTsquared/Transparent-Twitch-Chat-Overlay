@@ -115,6 +115,32 @@ body {
   display: none;
 }
 
+.native-chat-api-notice {
+  display: block;
+  max-width: calc(100% - 20px);
+  width: fit-content;
+  margin: 0.25em 0;
+  padding: 0.45em 0.65em;
+  border-left: 0.25em solid #ffb020;
+  background: rgba(0, 0, 0, 0.72);
+  color: white;
+  font-family: "Noto Sans", sans-serif;
+  font-weight: 600;
+  line-height: 1.25;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.native-chat-api-notice-title {
+  color: #ffdf70;
+  font-size: 0.9em;
+}
+
+.native-chat-api-notice-body {
+  font-size: 0.75em;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
 .paint {
   background-size: cover;
   background-clip: text;

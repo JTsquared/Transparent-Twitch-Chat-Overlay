@@ -22,8 +22,9 @@ namespace TransparentTwitchChatWPF.Helpers
     }
 
     /// <summary>
-    /// Provides direct paths to overlay HTML files located within the application's "browser" directory.
-    /// This helper assumes the application has read access to its installation folder.
+    /// Provides paths to local overlay HTML files. NativeChat is managed as a
+    /// writable asset pack so installed builds can update or repair it without
+    /// modifying the application content directory.
     /// </summary>
     internal static class OverlayPathHelper
     {
@@ -32,13 +33,15 @@ namespace TransparentTwitchChatWPF.Helpers
         /// </summary>
         private static readonly string BrowserBasePath = Path.Combine(AppContext.BaseDirectory, "browser");
 
+        private static readonly string NativeChatBasePath = GetNativeChatBasePath();
+
         /// <summary>
         /// Gets the full, absolute path to the settings page for the Native Chat overlay.
         /// </summary>
         /// <returns>The full path to native-chat\index.html.</returns>
         public static string GetNativeChatSettingsIndexFilePath()
         {
-            return Path.Combine(BrowserBasePath, "overlays", "native-chat", "index.html");
+            return Path.Combine(NativeChatBasePath, "index.html");
         }
 
         /// <summary>
@@ -47,7 +50,7 @@ namespace TransparentTwitchChatWPF.Helpers
         /// <returns>The full path to native-chat.</returns>
         public static string GetNativeChatPath()
         {
-            return Path.Combine(BrowserBasePath, "overlays", "native-chat");
+            return NativeChatBasePath;
         }
 
         /// <summary>
@@ -56,7 +59,7 @@ namespace TransparentTwitchChatWPF.Helpers
         /// <returns>The full path to native-chat\v2\index.html.</returns>
         public static string GetNativeChatOverlayPath()
         {
-            return Path.Combine(BrowserBasePath, "overlays", "native-chat", "v2", "index.html");
+            return Path.Combine(NativeChatBasePath, "v2", "index.html");
         }
 
         public static string GetNativeChatHostname()
@@ -73,8 +76,23 @@ namespace TransparentTwitchChatWPF.Helpers
         {
             if (string.IsNullOrEmpty(overlayId)) return false;
 
+            if (string.Equals(overlayId, "native-chat", StringComparison.OrdinalIgnoreCase))
+                return Directory.Exists(GetNativeChatPath());
+
             string overlayPath = Path.Combine(BrowserBasePath, "overlays", overlayId);
             return Directory.Exists(overlayPath);
+        }
+
+        private static string GetNativeChatBasePath()
+        {
+            if (AppInfo.IsPortable)
+                return Path.Combine(BrowserBasePath, "overlays", "native-chat");
+
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "TransparentTwitchChatWPF",
+                "NativeChat",
+                "active");
         }
     }
 }

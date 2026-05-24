@@ -5,7 +5,12 @@ param(
 
 Write-Host "Building NativeChat..." -ForegroundColor Cyan
 Push-Location .\NativeChatClient
-npm run build
+if (-not (Test-Path .\node_modules)) {
+    Write-Host "Restoring NativeChat npm dependencies..." -ForegroundColor Cyan
+    npm.cmd ci
+    if ($LASTEXITCODE -ne 0) { Write-Host "npm ci failed." -ForegroundColor Red; exit 1 }
+}
+npm.cmd run build
 if ($LASTEXITCODE -ne 0) { Write-Host "npm build failed." -ForegroundColor Red; exit 1 }
 Pop-Location
 

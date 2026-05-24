@@ -33,6 +33,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./src/index.html",
       filename: "index.html",
+      chunks: ["index"],
       inject: true,
       hash: true,
 	  minify: false,
@@ -40,6 +41,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./src/v2/index.html",
       filename: "v2/index.html",
+      chunks: ["v2"],
       inject: true,
       hash: true,
 	  minify: false,

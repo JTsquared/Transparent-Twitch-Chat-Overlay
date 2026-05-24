@@ -71,6 +71,32 @@ function escapeHtml(message) {
     .replace(/(>)(?!\()/g, "&gt;");
 }
 
+let hasShownTwitchApiAuthNotice = false;
+
+function ShowTwitchApiAuthNotice(reason) {
+    if (hasShownTwitchApiAuthNotice) {
+        return;
+    }
+
+    hasShownTwitchApiAuthNotice = true;
+
+    const headline = "Twitch features limited";
+    const details = "Chat still works. Connect or refresh Twitch in Settings > Connections to restore badges, colors, bits, and Twitch API features.";
+
+    console.warn("NativeChat: " + details, reason || "");
+
+    if (typeof SendInfoText === "function") {
+        SendInfoText(headline + ". " + details);
+    }
+
+    if (window.Chat && Chat.info && Array.isArray(Chat.info.lines)) {
+        const $notice = $('<div class="chat_line native-chat-api-notice"></div>');
+        $('<div class="native-chat-api-notice-title"></div>').text(headline).appendTo($notice);
+        $('<div class="native-chat-api-notice-body"></div>').text(details).appendTo($notice);
+        Chat.info.lines.push($notice.wrap("<div>").parent().html());
+    }
+}
+
 function TwitchOAuth(credentials) {
     return $.ajax({
         type: "GET",
@@ -84,9 +110,7 @@ function TwitchOAuth(credentials) {
             // console.log(result)
         },
         error : function(result) {
-            // this *should* show up when the token expires
-            var $chatLine = $('<div style="color: red;">Twitch OAuth invalid</div>');
-            Chat.info.lines.push($chatLine.wrap('<div>').parent().html());
+            ShowTwitchApiAuthNotice("Twitch OAuth validation failed.");
         }
     });
 }
@@ -164,7 +188,7 @@ const TWITCH_API_FALLBACKS = {
 
 function TwitchAPI(url, credentials) {
     return $.Deferred(function(def) {
-        function tryFallback(url) {
+        function tryFallback(url, notifyIfNoFallback) {
             // Find a matching fallback by checking if the url starts with any known key
             const fallbackKey = Object.keys(TWITCH_API_FALLBACKS).find(key => url.includes(key));
             if (fallbackKey) {
@@ -177,6 +201,11 @@ function TwitchAPI(url, credentials) {
                     return;
                 }
             }
+
+            if (notifyIfNoFallback) {
+                ShowTwitchApiAuthNotice("No Twitch API fallback is available for: " + url);
+            }
+
             def.reject({ error: "No fallback available for: " + url });
         }
 
@@ -194,14 +223,13 @@ function TwitchAPI(url, credentials) {
                     def.resolve(res);
                 },
                 error: function(err) {
-                    var $chatLine = $('<div style="color: red;">Twitch API Error</div>');
                     console.log(err);
-                    Chat.info.lines.push($chatLine.wrap('<div>').parent().html());
-                    tryFallback(url);
+                    ShowTwitchApiAuthNotice("Twitch API request failed for: " + url);
+                    tryFallback(url, false);
                 }
             });
         } else {
-            tryFallback(url);
+            tryFallback(url, true);
         }
     }).promise();
 }

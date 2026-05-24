@@ -977,7 +977,7 @@ public partial class MainWindow : Window, BrowserWindow
         }
     }
 
-    private void webView_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+    private async void webView_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         if (App.Settings.GeneralSettings.ChatType == (int)ChatTypes.TwitchPopout)
         {
@@ -993,33 +993,66 @@ public partial class MainWindow : Window, BrowserWindow
         }
         else if (App.Settings.GeneralSettings.ChatType == (int)ChatTypes.NativeChat)
         {
-            string message = e.TryGetWebMessageAsString();
+            string json = e.WebMessageAsJson;
+            if (string.IsNullOrWhiteSpace(json))
+                return;
 
-            if (message == "RepairRequested")
+            try
             {
-                RestoreNativeChatFiles();
+                using var document = JsonDocument.Parse(json);
+                JsonElement root = document.RootElement;
 
-                // Reset the flag and navigate back to the normal chat URL
-                _isShowingRepairPrompt = false;
-                this.webView.CoreWebView2.Navigate(new NativeChatProvider().GetNavigationUri().ToString());
-            }
-            else
-            {
-                string json = e.WebMessageAsJson;
+                if (root.ValueKind == JsonValueKind.String)
+                {
+                    string message = root.GetString() ?? string.Empty;
+                    if (message == "RepairRequested")
+                    {
+                        RestoreNativeChatFiles();
 
-                // Deserialize the JSON string directly into the jChatConfig object
+                        // Reset the flag and navigate back to the normal chat URL
+                        _isShowingRepairPrompt = false;
+                        this.webView.CoreWebView2.Navigate(new NativeChatProvider().GetNavigationUri().ToString());
+                    }
+
+                    return;
+                }
+
+                if (root.ValueKind == JsonValueKind.Object &&
+                    root.TryGetProperty("type", out JsonElement typeElement))
+                {
+                    string type = typeElement.GetString() ?? string.Empty;
+                    if (type == "NativeChatReady")
+                    {
+                        int protocolVersion = root.TryGetProperty("protocolVersion", out JsonElement protocolElement)
+                            ? protocolElement.GetInt32()
+                            : 0;
+
+                        if (protocolVersion > 1)
+                        {
+                            _logger.LogWarning(
+                                "NativeChat protocol {ProtocolVersion} is newer than this app supports.",
+                                protocolVersion);
+                            return;
+                        }
+
+                        await new NativeChatProvider().ConfigureAsync(webView.CoreWebView2);
+                        return;
+                    }
+                }
+
                 jChatConfig config = JsonSerializer.Deserialize<jChatConfig>(json);
 
                 if (config != null)
                 {
-                    // TODO: save the configuration to settings?
-                    // App.Current.SaveConfiguration(config);
-
                     Dispatcher.Invoke(() =>
                     {
                         this.Title = $"Chat Overlay for {config.Channel}";
                     });
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not handle NativeChat web message.");
             }
         }
     }
