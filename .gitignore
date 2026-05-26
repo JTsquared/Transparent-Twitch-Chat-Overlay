@@ -300,6 +300,7 @@ __pycache__/
 *.xsd.cs
 
 .claude/
+tools/
 
 # NativeChat Resources
 TransparentTwitchChatWPF/Resources/native-chat.zip

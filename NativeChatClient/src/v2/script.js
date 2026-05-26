@@ -841,6 +841,10 @@ Chat = {
   },
 
   getUserColor: function (nick, info) {
+    nick = Chat.sanitizeUsername(nick);
+    if (Chat.info.colors[nick]) {
+      return Chat.info.colors[nick];
+    }
     const twitchColors = [
       "#FF0000", // Red
       "#0000FF", // Blue
@@ -1324,7 +1328,7 @@ Chat = {
             if (badge.color) $badge.css("background-color", badge.color);
             if (badge.description === "Bot" && info.mod === "1") {
               $badge.css("background-color", "rgb(0, 173, 3)");
-              $modBadge.remove();
+              if ($modBadge) $modBadge.remove();
             }
             $badge.attr("src", badge.url);
             $userInfo.append($badge);
@@ -1622,6 +1626,10 @@ Chat = {
       const processedWords = words.map(word => {
         let replacedWord = word;
         let isReplaced = false;
+
+        if (replacements[word]) {
+          return { word: replacedWord, isReplaced: false };
+        }
 
         // Check personal emotes if not YouTube
         if (!isReplaced && service !== "youtube" && Chat.info.seventvPersonalEmotes[info["user-id"]]) {
@@ -1970,7 +1978,7 @@ Chat = {
   },
 
   sanitizeUsername: function (username) {
-    return username.replace(/\\s$/, '').trim();
+    return String(username || "").replace(/\\s/g, '').replace(/\s+/g, '').trim();
   },
 
   clearChat: function(nick) {
@@ -2054,7 +2062,7 @@ Chat = {
               if (!message.params[1])
                 return;
               
-              var nick = message.prefix.split("@")[0].split("!")[0];
+              var nick = Chat.sanitizeUsername(message.prefix.split("@")[0].split("!")[0]);
 
               // #region COMMANDS
 

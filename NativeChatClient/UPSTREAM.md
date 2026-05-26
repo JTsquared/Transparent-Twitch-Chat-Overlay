@@ -9,13 +9,14 @@ NativeChatClient is the first-party local chat client used by Transparent Twitch
 - Cyan Chat: https://github.com/Johnnycyan/cyan-chat
 - jChat: https://github.com/giambaJ/jChat
 
-## Last Upstream Baseline
+## Upstream Tracking
 
 - Upstream project: Cyan Chat
-- Upstream commit/tag: 
-- Date imported: 
-- Imported by: 
-- Notes: This copy has already diverged substantially from upstream. Future upstream work should be reviewed and ported selectively.
+- Upstream remote: https://github.com/Johnnycyan/cyan-chat
+- Original imported baseline: 26868c092c1d7752793b7bfccfe4ad223463eff6
+- Last reviewed upstream commit: 26868c092c1d7752793b7bfccfe4ad223463eff6
+- Last reviewed date:
+- Notes: NativeChat has diverged substantially. Future upstream changes are reviewed and ported selectively.
 
 ## Local Ownership
 

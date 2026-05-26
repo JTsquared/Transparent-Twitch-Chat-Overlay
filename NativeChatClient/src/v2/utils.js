@@ -541,8 +541,8 @@ async function fixZeroWidthEmotes(messageId) {
     if (messageElement) {
       const containers = Array.from(messageElement.querySelectorAll(".zero-width_container.staging"));
 
-      if (containers.length > 0 || messageElement.querySelectorAll("img.emote").length > 0) {
-        let allEmotes = Array.from(messageElement.querySelectorAll("img.emote"));
+      if (containers.length > 0 || messageElement.querySelectorAll("img.emote, img.emoji").length > 0) {
+        let allEmotes = Array.from(messageElement.querySelectorAll("img.emote, img.emoji"));
         let currentSet = [];
         let maxWidth = 0;
 
