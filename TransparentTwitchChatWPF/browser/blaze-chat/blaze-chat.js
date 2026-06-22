@@ -74,13 +74,14 @@
 
         var line = document.createElement('div');
         line.className = 'chat-line';
+        if (config.bgEnabled) line.style.textShadow = 'none';
         line.dataset.messageId = payload.messageId || '';
         line.innerHTML =
             platformBadge +
             badges +
             '<span class="username" style="color:' + color + '">' + escapeHtml(displayName) + '</span>' +
             '<span class="separator">: </span>' +
-            '<span class="message-text">' + text + '</span>';
+            '<span class="message-text" style="color:' + (config.textColor || '#ffffff') + '">' + text + '</span>';
 
         container.appendChild(line);
 
@@ -297,9 +298,21 @@
             config.accessToken = message.payload.accessToken || '';
             config.fadeTimeout = message.payload.fadeTimeout || 0;
             config.textSize = message.payload.textSize || 18;
+            config.fontFamily = message.payload.fontFamily || 'Noto Sans';
+            config.textColor = message.payload.textColor || '#ffffff';
+            config.bgEnabled = !!message.payload.bgEnabled;
+            config.bgOpacity = message.payload.bgOpacity || 50;
 
-            // Apply text size to chat container
-            document.getElementById('chat_container').style.fontSize = config.textSize + 'px';
+            // Apply appearance settings
+            var container = document.getElementById('chat_container');
+            container.style.fontSize = config.textSize + 'px';
+            container.style.fontFamily = "'" + config.fontFamily + "', sans-serif";
+
+            if (config.bgEnabled) {
+                document.body.style.background = 'rgba(0,0,0,' + (config.bgOpacity / 100) + ')';
+            } else {
+                document.body.style.background = 'transparent';
+            }
 
             console.log('[BlazeChat] clientId:', config.clientId ? 'present' : 'MISSING',
                 'token:', config.accessToken ? 'present' : 'MISSING');

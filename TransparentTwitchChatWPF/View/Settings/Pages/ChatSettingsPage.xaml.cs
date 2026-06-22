@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using TransparentTwitchChatWPF.Blaze;
 using TransparentTwitchChatWPF.Utils;
 using Path = System.IO.Path;
 
@@ -105,9 +106,7 @@ public partial class ChatSettingsPage : UserControl
             else if (chatType == ChatTypes.BlazeChat)
             {
                 this.blazeChatGrid.Visibility = Visibility.Visible;
-                this.tbBlazeChannel.Text = App.Settings.GeneralSettings.BlazeChannel;
-                this.slBlazeTextSize.Value = App.Settings.GeneralSettings.BlazeTextSize;
-                this.lblBlazeTextSize.Text = App.Settings.GeneralSettings.BlazeTextSize + "px";
+                LoadBlazeSettingsToUI();
             }
         }
     }
@@ -182,8 +181,7 @@ public partial class ChatSettingsPage : UserControl
             }
             else if (chatType == ChatTypes.BlazeChat)
             {
-                App.Settings.GeneralSettings.BlazeChannel = this.tbBlazeChannel.Text;
-                App.Settings.GeneralSettings.BlazeTextSize = (int)this.slBlazeTextSize.Value;
+                SaveBlazeSettingsFromUI();
             }
         }
     }
@@ -339,9 +337,7 @@ public partial class ChatSettingsPage : UserControl
                 break;
             case ChatTypes.BlazeChat:
                 this.blazeChatGrid.Visibility = Visibility.Visible;
-                this.tbBlazeChannel.Text = App.Settings.GeneralSettings.BlazeChannel;
-                this.slBlazeTextSize.Value = App.Settings.GeneralSettings.BlazeTextSize;
-                this.lblBlazeTextSize.Text = App.Settings.GeneralSettings.BlazeTextSize + "px";
+                LoadBlazeSettingsToUI();
                 break;
         }
     }
@@ -493,9 +489,114 @@ public partial class ChatSettingsPage : UserControl
         tbPopoutCSS.IsReadOnly = useDefaultCss;
     }
 
+    // --- Blaze settings helpers ---
+
+    private readonly BlazeSettingsSync _blazeSync = new();
+
+    private void LoadBlazeSettingsToUI()
+    {
+        var s = App.Settings.GeneralSettings;
+        this.tbBlazeChannel.Text = s.BlazeChannel;
+        this.slBlazeTextSize.Value = s.BlazeTextSize;
+        this.lblBlazeTextSize.Text = s.BlazeTextSize + "px";
+        this.cbBlazeSync.IsChecked = s.BlazeSyncEnabled;
+        this.cbBlazeBgEnabled.IsChecked = s.BlazeBgEnabled;
+        this.slBlazeBgOpacity.Value = s.BlazeBgOpacity;
+        this.lblBlazeBgOpacity.Text = s.BlazeBgOpacity + "%";
+        this.tbBlazeTextColor.Text = s.BlazeTextColor;
+        this.slBlazeFade.Value = s.BlazeFadeTimeout;
+        this.lblBlazeFade.Text = s.BlazeFadeTimeout == 0 ? "Off" : s.BlazeFadeTimeout + "s";
+
+        // Set font combo
+        for (int i = 0; i < cbBlazeFont.Items.Count; i++)
+        {
+            if (cbBlazeFont.Items[i] is ComboBoxItem item &&
+                item.Content.ToString() == s.BlazeFontFamily)
+            {
+                cbBlazeFont.SelectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    private void SaveBlazeSettingsFromUI()
+    {
+        var s = App.Settings.GeneralSettings;
+        s.BlazeChannel = this.tbBlazeChannel.Text;
+        s.BlazeTextSize = (int)this.slBlazeTextSize.Value;
+        s.BlazeSyncEnabled = this.cbBlazeSync.IsChecked ?? false;
+        s.BlazeBgEnabled = this.cbBlazeBgEnabled.IsChecked ?? false;
+        s.BlazeBgOpacity = (int)this.slBlazeBgOpacity.Value;
+        s.BlazeTextColor = this.tbBlazeTextColor.Text;
+        s.BlazeFadeTimeout = (int)this.slBlazeFade.Value;
+        s.BlazeFontFamily = (cbBlazeFont.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Noto Sans";
+
+        // Sync to server if enabled
+        if (s.BlazeSyncEnabled && !string.IsNullOrWhiteSpace(s.BlazeChannel))
+        {
+            _ = SyncSettingsToServer(s);
+        }
+    }
+
+    private async Task SyncSettingsToServer(GeneralSettings s)
+    {
+        var settings = new BlazeOverlaySettings
+        {
+            BgEnabled = s.BlazeBgEnabled,
+            BgOpacity = s.BlazeBgOpacity,
+            TextSize = s.BlazeTextSize,
+            FontFamily = s.BlazeFontFamily,
+            TextColor = s.BlazeTextColor,
+            FadeTimeout = s.BlazeFadeTimeout
+        };
+
+        bool ok = await _blazeSync.SaveToServerAsync(s.BlazeChannel, settings);
+        if (ok)
+            Debug.WriteLine("Blaze settings synced to server.");
+        else
+            Debug.WriteLine("Failed to sync Blaze settings to server.");
+    }
+
+    private async void cbBlazeSync_Checked(object sender, RoutedEventArgs e)
+    {
+        // When sync is turned on, pull settings from server
+        string channel = this.tbBlazeChannel.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(channel)) return;
+
+        var serverSettings = await _blazeSync.LoadFromServerAsync(channel);
+        if (serverSettings != null)
+        {
+            var s = App.Settings.GeneralSettings;
+            s.BlazeTextSize = serverSettings.TextSize;
+            s.BlazeBgEnabled = serverSettings.BgEnabled;
+            s.BlazeBgOpacity = serverSettings.BgOpacity;
+            s.BlazeFontFamily = serverSettings.FontFamily;
+            s.BlazeTextColor = serverSettings.TextColor;
+            s.BlazeFadeTimeout = serverSettings.FadeTimeout;
+            LoadBlazeSettingsToUI();
+        }
+    }
+
+    private void cbBlazeSync_Unchecked(object sender, RoutedEventArgs e)
+    {
+        // Nothing to do — local settings remain as-is
+    }
+
     private void slBlazeTextSize_ValueChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
     {
         if (lblBlazeTextSize != null)
             lblBlazeTextSize.Text = (int)e.NewValue + "px";
+    }
+
+    private void slBlazeBgOpacity_ValueChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (lblBlazeBgOpacity != null)
+            lblBlazeBgOpacity.Text = (int)e.NewValue + "%";
+    }
+
+    private void slBlazeFade_ValueChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (lblBlazeFade != null)
+            lblBlazeFade.Text = (int)e.NewValue == 0 ? "Off" : (int)e.NewValue + "s";
     }
 }

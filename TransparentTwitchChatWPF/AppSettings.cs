@@ -254,6 +254,12 @@ public class GeneralSettings
     // Blaze Stream settings
     public string BlazeChannel { get; set; } = string.Empty;
     public int BlazeTextSize { get; set; } = 18;
+    public bool BlazeSyncEnabled { get; set; } = false;
+    public bool BlazeBgEnabled { get; set; } = false;
+    public int BlazeBgOpacity { get; set; } = 50;
+    public string BlazeFontFamily { get; set; } = "Noto Sans";
+    public string BlazeTextColor { get; set; } = "#ffffff";
+    public int BlazeFadeTimeout { get; set; } = 0;
 }
 
 public class jChatConfig

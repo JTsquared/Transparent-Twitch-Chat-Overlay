@@ -21,19 +21,22 @@ public class BlazeChatProvider : IChatProvider
 
         if (string.IsNullOrEmpty(accessToken))
         {
-            Debug.WriteLine("Blaze: Could not obtain access token. Is the Client Secret configured?");
-            // Still send the config so the JS can show an error
+            Debug.WriteLine("Blaze: Could not obtain access token.");
         }
+
+        var s = App.Settings.GeneralSettings;
 
         var payload = new
         {
-            Channel = App.Settings.GeneralSettings.BlazeChannel,
+            Channel = s.BlazeChannel,
             ClientId = BlazeCredentialManager.ClientId,
             AccessToken = accessToken ?? "",
-            FadeTimeout = App.Settings.GeneralSettings.FadeChat
-                ? int.TryParse(App.Settings.GeneralSettings.FadeTime, out var ft) ? ft : 0
-                : 0,
-            TextSize = App.Settings.GeneralSettings.BlazeTextSize
+            TextSize = s.BlazeTextSize,
+            FontFamily = s.BlazeFontFamily,
+            TextColor = s.BlazeTextColor,
+            BgEnabled = s.BlazeBgEnabled,
+            BgOpacity = s.BlazeBgOpacity,
+            FadeTimeout = s.BlazeFadeTimeout
         };
 
         var options = new JsonSerializerOptions
