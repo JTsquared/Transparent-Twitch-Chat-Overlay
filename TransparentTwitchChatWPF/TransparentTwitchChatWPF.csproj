@@ -68,8 +68,8 @@
 		<Resource Include="icons\twitch_chat.ico" />
 		<None Remove="icons\twitch_chat2.ico" />
 		<Resource Include="icons\twitch_chat2.ico" />
-		<None Remove="suco.ico" />
-		<Resource Include="suco.ico" />
+		<None Remove="icons\suco.ico" />
+		<Resource Include="icons\suco.ico" />
 	</ItemGroup>
 
 	<!-- content files that need to be copied to the output directory -->
