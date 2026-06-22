@@ -262,6 +262,7 @@ public class GeneralSettings
     public int BlazeFadeTimeout { get; set; } = 0;
     public string TwitchChannel { get; set; } = string.Empty;
     public string KickChannel { get; set; } = string.Empty;
+    public string ArenaChannel { get; set; } = string.Empty;
 }
 
 public class jChatConfig

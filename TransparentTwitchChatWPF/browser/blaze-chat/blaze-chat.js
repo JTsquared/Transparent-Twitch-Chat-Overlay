@@ -219,6 +219,55 @@
         };
     }
 
+    // ===================== ARENA (via SSE proxy) =====================
+    var ARENA_SSE_BASE = 'https://blazegames.store/suco/api/arena-chat/';
+    var arenaEventSource = null;
+    var arenaRetryTimer = null;
+
+    function connectArena(handle) {
+        if (arenaEventSource) { try { arenaEventSource.close(); } catch(e){} arenaEventSource = null; }
+        if (arenaRetryTimer) { clearInterval(arenaRetryTimer); arenaRetryTimer = null; }
+
+        function tryConnect() {
+            console.log('[Arena] Connecting SSE for', handle);
+            arenaEventSource = new EventSource(ARENA_SSE_BASE + encodeURIComponent(handle));
+
+            arenaEventSource.onmessage = function (event) {
+                try {
+                    var msg = JSON.parse(event.data);
+                    if (msg.username && msg.text) {
+                        addMessage('arena', msg.username, msg.text, null, msg.messageId);
+                    }
+                } catch (e) {}
+            };
+
+            arenaEventSource.addEventListener('connected', function () {
+                console.log('[Arena] SSE connected');
+                if (arenaRetryTimer) { clearInterval(arenaRetryTimer); arenaRetryTimer = null; }
+            });
+
+            arenaEventSource.addEventListener('error', function () {
+                console.log('[Arena] SSE error, will retry in 30s');
+                arenaEventSource.close();
+                arenaEventSource = null;
+                if (!arenaRetryTimer) {
+                    arenaRetryTimer = setInterval(function () { tryConnect(); }, 30000);
+                }
+            });
+
+            arenaEventSource.addEventListener('disconnected', function () {
+                console.log('[Arena] Stream ended, will retry in 30s');
+                arenaEventSource.close();
+                arenaEventSource = null;
+                if (!arenaRetryTimer) {
+                    arenaRetryTimer = setInterval(function () { tryConnect(); }, 30000);
+                }
+            });
+        }
+
+        tryConnect();
+    }
+
     // ===================== C# BRIDGE =====================
     console.log('[SUCO] Script loaded, host bridge:', blazeChatHost ? 'available' : 'unavailable');
 
@@ -259,6 +308,10 @@
                         if (kickRoom) { connectKick(kickRoom); connected.push('Kick'); }
                         else console.error('[Kick] Could not resolve:', kickCh);
                     }
+
+                    // Arena
+                    var arenaCh = p.arenaChannel || '';
+                    if (arenaCh) { connectArena(arenaCh); connected.push('Arena'); }
 
                     if (connected.length > 0) showStatus('Connected: ' + connected.join(', '), 3000);
                     else showStatus('No platforms configured', 5000);

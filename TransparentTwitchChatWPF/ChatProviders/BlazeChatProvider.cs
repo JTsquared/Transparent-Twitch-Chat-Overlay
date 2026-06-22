@@ -31,6 +31,7 @@ public class BlazeChatProvider : IChatProvider
             Channel = s.BlazeChannel,
             TwitchChannel = s.TwitchChannel,
             KickChannel = s.KickChannel,
+            ArenaChannel = s.ArenaChannel,
             ClientId = BlazeCredentialManager.ClientId,
             AccessToken = accessToken ?? "",
             TextSize = s.BlazeTextSize,

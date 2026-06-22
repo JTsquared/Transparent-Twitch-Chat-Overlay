@@ -170,6 +170,10 @@
                     <TextBox Name="tbKickChannel" HorizontalAlignment="Left" Height="23" Width="240"
                              TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="kick username (optional)" />
 
+                    <Label Content="Arena Handle" HorizontalAlignment="Left" FontWeight="Bold"/>
+                    <TextBox Name="tbArenaChannel" HorizontalAlignment="Left" Height="23" Width="240"
+                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="arena handle (optional)" />
+
                     <Separator Margin="0,6,0,2"/>
                     <Label Content="Appearance" HorizontalAlignment="Left" FontWeight="Bold" FontSize="14"/>
 

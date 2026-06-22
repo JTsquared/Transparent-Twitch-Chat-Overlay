@@ -499,6 +499,7 @@ public partial class ChatSettingsPage : UserControl
         this.tbBlazeChannel.Text = s.BlazeChannel;
         this.tbTwitchChannel.Text = s.TwitchChannel;
         this.tbKickChannel.Text = s.KickChannel;
+        this.tbArenaChannel.Text = s.ArenaChannel;
         this.slBlazeTextSize.Value = s.BlazeTextSize;
         this.lblBlazeTextSize.Text = s.BlazeTextSize + "px";
         this.cbBlazeSync.IsChecked = s.BlazeSyncEnabled;
@@ -527,6 +528,7 @@ public partial class ChatSettingsPage : UserControl
         s.BlazeChannel = this.tbBlazeChannel.Text;
         s.TwitchChannel = this.tbTwitchChannel.Text;
         s.KickChannel = this.tbKickChannel.Text;
+        s.ArenaChannel = this.tbArenaChannel.Text;
         s.BlazeTextSize = (int)this.slBlazeTextSize.Value;
         s.BlazeSyncEnabled = this.cbBlazeSync.IsChecked ?? false;
         s.BlazeBgEnabled = this.cbBlazeBgEnabled.IsChecked ?? false;
