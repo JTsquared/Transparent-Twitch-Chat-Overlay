@@ -250,6 +250,11 @@ public class GeneralSettings
     public Hotkey BringToTopHotkey { get; set; } = new Hotkey(Key.F8, ModifierKeys.Control | ModifierKeys.Alt);
     public bool AllowMultipleInstances { get; set; } = false;
     public string NativeChatVersion { get; set; } = string.Empty;
+
+    // Blaze Stream settings
+    public string BlazeChannel { get; set; } = string.Empty;
+    public string BlazeClientId { get; set; } = string.Empty;
+    public string BlazeAccessToken { get; set; } = string.Empty;
 }
 
 public class jChatConfig

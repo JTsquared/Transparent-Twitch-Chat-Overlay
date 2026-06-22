@@ -491,6 +491,18 @@ public partial class MainWindow : Window, BrowserWindow
             _logger.LogError(ex, "Failed to set virtual host name to folder mapping for WebView2.");
             MessageBox.Show(this, $"An error occurred while configuring the web environment:\n{ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
+        try
+        {
+            core.SetVirtualHostNameToFolderMapping(
+                "blazechat.overlay",
+                Path.Combine(AppContext.BaseDirectory, "browser"),
+                CoreWebView2HostResourceAccessKind.DenyCors);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set virtual host mapping for Blaze chat.");
+        }
     }
 
     private async void webView_CoreWebView2ProcessFailed(object sender, CoreWebView2ProcessFailedEventArgs e)
@@ -1053,6 +1065,32 @@ public partial class MainWindow : Window, BrowserWindow
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Could not handle NativeChat web message.");
+            }
+        }
+        else if (App.Settings.GeneralSettings.ChatType == (int)ChatTypes.BlazeChat)
+        {
+            string json = e.WebMessageAsJson;
+            if (string.IsNullOrWhiteSpace(json))
+                return;
+
+            try
+            {
+                using var document = JsonDocument.Parse(json);
+                JsonElement root = document.RootElement;
+
+                if (root.ValueKind == JsonValueKind.Object &&
+                    root.TryGetProperty("type", out JsonElement typeElement))
+                {
+                    string type = typeElement.GetString() ?? string.Empty;
+                    if (type == "BlazeChatReady")
+                    {
+                        await new BlazeChatProvider().ConfigureAsync(webView.CoreWebView2);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not handle BlazeChat web message.");
             }
         }
     }

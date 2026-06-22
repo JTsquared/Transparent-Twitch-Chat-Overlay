@@ -67,30 +67,30 @@ public partial class ChatSettingsPage : UserControl
         {
             var chatType = (ChatTypes)App.Settings.GeneralSettings.ChatType;
 
-            if (chatType == ChatTypes.CustomURL)
-            {
-                this.kapChatGrid.Visibility = Visibility.Hidden;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
-                this.customURLGrid.Visibility = Visibility.Visible;
-                this.jChatGrid.Visibility = Visibility.Hidden;
+            // Hide all panels first, then show the active one
+            this.kapChatGrid.Visibility = Visibility.Hidden;
+            this.twitchPopoutChat.Visibility = Visibility.Hidden;
+            this.customURLGrid.Visibility = Visibility.Hidden;
+            this.jChatGrid.Visibility = Visibility.Hidden;
+            this.blazeChatGrid.Visibility = Visibility.Hidden;
 
+            if (chatType == ChatTypes.NativeChat)
+            {
+                this.jChatGrid.Visibility = Visibility.Visible;
+            }
+            else if (chatType == ChatTypes.CustomURL)
+            {
+                this.customURLGrid.Visibility = Visibility.Visible;
                 this.tbURL.Text = App.Settings.GeneralSettings.CustomURL;
                 this.tbCSS2.Text = App.Settings.GeneralSettings.CustomCSS;
             }
             else if (chatType == ChatTypes.TwitchPopout)
             {
-                this.kapChatGrid.Visibility = Visibility.Hidden;
                 this.twitchPopoutChat.Visibility = Visibility.Visible;
-                this.customURLGrid.Visibility = Visibility.Hidden;
-                this.jChatGrid.Visibility = Visibility.Hidden;
             }
             else if (chatType == ChatTypes.KapChat)
             {
                 this.kapChatGrid.Visibility = Visibility.Visible;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
-                this.customURLGrid.Visibility = Visibility.Hidden;
-                this.jChatGrid.Visibility = Visibility.Hidden;
-
                 this.tbURL.Text = string.Empty;
 
                 if (string.IsNullOrEmpty(App.Settings.GeneralSettings.CustomCSS))
@@ -102,14 +102,12 @@ public partial class ChatSettingsPage : UserControl
                     this.tbCSS.Text = App.Settings.GeneralSettings.CustomCSS;
                 }
             }
-            else if (chatType == ChatTypes.KapChat)
+            else if (chatType == ChatTypes.BlazeChat)
             {
-                this.kapChatGrid.Visibility = Visibility.Hidden;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
-                this.customURLGrid.Visibility = Visibility.Hidden;
-                this.jChatGrid.Visibility = Visibility.Visible;
-
-                this.tbURL.Text = string.Empty;
+                this.blazeChatGrid.Visibility = Visibility.Visible;
+                this.tbBlazeChannel.Text = App.Settings.GeneralSettings.BlazeChannel;
+                this.tbBlazeClientId.Text = App.Settings.GeneralSettings.BlazeClientId;
+                this.pbBlazeAccessToken.Password = App.Settings.GeneralSettings.BlazeAccessToken;
             }
         }
     }
@@ -181,6 +179,12 @@ public partial class ChatSettingsPage : UserControl
                 if (App.Settings.GeneralSettings.RedemptionsEnabled)
                     App.Settings.GeneralSettings.Username = this.tbUsername2.Text;
                 App.Settings.GeneralSettings.ChatNotificationSound = this.comboChatSound2.SelectedValue.ToString();
+            }
+            else if (chatType == ChatTypes.BlazeChat)
+            {
+                App.Settings.GeneralSettings.BlazeChannel = this.tbBlazeChannel.Text;
+                App.Settings.GeneralSettings.BlazeClientId = this.tbBlazeClientId.Text;
+                App.Settings.GeneralSettings.BlazeAccessToken = this.pbBlazeAccessToken.Password;
             }
         }
     }
@@ -312,39 +316,33 @@ public partial class ChatSettingsPage : UserControl
     {
         App.Settings.GeneralSettings.ChatType = (int)chatType;
 
+        // Hide all panels first
+        this.kapChatGrid.Visibility = Visibility.Hidden;
+        this.customURLGrid.Visibility = Visibility.Hidden;
+        this.twitchPopoutChat.Visibility = Visibility.Hidden;
+        this.jChatGrid.Visibility = Visibility.Hidden;
+        this.blazeChatGrid.Visibility = Visibility.Hidden;
+
         switch (chatType)
         {
             case ChatTypes.NativeChat:
-                this.kapChatGrid.Visibility = Visibility.Hidden;
-                this.customURLGrid.Visibility = Visibility.Hidden;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
                 this.jChatGrid.Visibility = Visibility.Visible;
                 break;
             case ChatTypes.TwitchPopout:
-                this.kapChatGrid.Visibility = Visibility.Hidden;
-                this.customURLGrid.Visibility = Visibility.Hidden;
                 this.twitchPopoutChat.Visibility = Visibility.Visible;
-                this.jChatGrid.Visibility = Visibility.Hidden;
-
                 LoadTwitchPopoutCssSettings();
                 break;
             case ChatTypes.KapChat:
                 this.kapChatGrid.Visibility = Visibility.Visible;
-                this.customURLGrid.Visibility = Visibility.Hidden;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
-                this.jChatGrid.Visibility = Visibility.Hidden;
                 break;
             case ChatTypes.CustomURL:
-                this.kapChatGrid.Visibility = Visibility.Hidden;
                 this.customURLGrid.Visibility = Visibility.Visible;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
-                this.jChatGrid.Visibility = Visibility.Hidden;
                 break;
-            default:
-                this.kapChatGrid.Visibility = Visibility.Hidden;
-                this.customURLGrid.Visibility = Visibility.Hidden;
-                this.twitchPopoutChat.Visibility = Visibility.Hidden;
-                this.jChatGrid.Visibility = Visibility.Hidden;
+            case ChatTypes.BlazeChat:
+                this.blazeChatGrid.Visibility = Visibility.Visible;
+                this.tbBlazeChannel.Text = App.Settings.GeneralSettings.BlazeChannel;
+                this.tbBlazeClientId.Text = App.Settings.GeneralSettings.BlazeClientId;
+                this.pbBlazeAccessToken.Password = App.Settings.GeneralSettings.BlazeAccessToken;
                 break;
         }
     }

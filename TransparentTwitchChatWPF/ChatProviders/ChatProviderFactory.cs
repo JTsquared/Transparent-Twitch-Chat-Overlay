@@ -20,6 +20,8 @@ public static class ChatProviderFactory
                 return new CustomProvider();
             case ChatTypes.NativeChat:
                 return new NativeChatProvider();
+            case ChatTypes.BlazeChat:
+                return new BlazeChatProvider();
             default:
                 throw new NotSupportedException($"Chat type {chatType} is not supported.");
         }

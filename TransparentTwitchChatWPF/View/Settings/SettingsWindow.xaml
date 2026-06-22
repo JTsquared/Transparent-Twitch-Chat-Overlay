@@ -88,6 +88,7 @@
                         <ComboBoxItem Content="Twitch Popout" />
                         <ComboBoxItem Content="KapChat (Deprecated)" />
                         <ComboBoxItem Content="Custom URL" />
+                        <ComboBoxItem Content="Blaze Chat" />
                     </ComboBox>
             
                     <Button

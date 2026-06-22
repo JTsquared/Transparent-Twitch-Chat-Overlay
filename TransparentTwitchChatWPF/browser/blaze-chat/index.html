@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Blaze Chat Overlay</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            overflow: hidden;
+            height: 100vh;
+            background: transparent;
+            font-family: 'Noto Sans', sans-serif;
+        }
+
+        #chat_container {
+            width: 100%;
+            padding: 10px;
+            position: absolute;
+            bottom: 0;
+            overflow: hidden;
+            color: white;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .chat-line {
+            padding: 4px 8px;
+            margin-bottom: 2px;
+            text-shadow:
+                -1px -1px 1px #000,
+                 1px -1px 1px #000,
+                -1px  1px 1px #000,
+                 1px  1px 1px #000;
+            animation: fadeIn 0.3s ease-in;
+            line-height: 1.4;
+        }
+
+        .chat-line.fading {
+            opacity: 0;
+            transition: opacity 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .username {
+            font-weight: 700;
+        }
+
+        .separator {
+            margin: 0 2px;
+        }
+
+        .message-text {
+            font-weight: 400;
+        }
+
+        .badge {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+            margin-right: 3px;
+            border-radius: 3px;
+        }
+
+        .badge-mod { background: #00ad03; }
+        .badge-vip { background: #e005b9; }
+        .badge-og  { background: #ff6600; }
+        .badge-sub { background: #9146ff; }
+
+        #status_container {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #status_text {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            color: white;
+            font-size: 14px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #status_text.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="status_container">
+        <span id="status_text"></span>
+    </div>
+    <div id="chat_container"></div>
+
+    <script src="blaze-chat.js"></script>
+</body>
+</html>

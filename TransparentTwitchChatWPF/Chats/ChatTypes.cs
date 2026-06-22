@@ -7,5 +7,6 @@ namespace TransparentTwitchChatWPF
         TwitchPopout = 1,
         KapChat = 2,
         CustomURL = 3,
+        BlazeChat = 4,
     }
 }

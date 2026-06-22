@@ -147,5 +147,27 @@
                         Click="btRestoreNativeChatDefaults_Click" />
             </StackPanel>
         </Grid>
+        <Grid Name="blazeChatGrid" Visibility="Hidden" Grid.Column="1">
+            <DockPanel Margin="10">
+                <ui:SimpleStackPanel DockPanel.Dock="Top" Margin="10" Spacing="8">
+                    <Label Content="Blaze Stream Chat" HorizontalAlignment="Left" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
+                               Text="Connect to a Blaze Stream channel's chat. You'll need a Blaze developer app — register at dev.blaze.stream." />
+                    <Label Content="Channel Name" HorizontalAlignment="Left" FontWeight="Bold"/>
+                    <TextBox Name="tbBlazeChannel" HorizontalAlignment="Left" Height="23" Width="240"
+                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="channel username or UUID" />
+                    <Label Content="Client ID" HorizontalAlignment="Left" FontWeight="Bold"/>
+                    <TextBox Name="tbBlazeClientId" HorizontalAlignment="Left" Height="23" Width="240"
+                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="from dev.blaze.stream" />
+                    <Label Content="Access Token" HorizontalAlignment="Left" FontWeight="Bold"/>
+                    <PasswordBox Name="pbBlazeAccessToken" HorizontalAlignment="Left" Height="23" Width="240" />
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,8,0,0"
+                               Text="Get your Client ID and Access Token from the Blaze Developer Console." />
+                    <ui:HyperlinkButton NavigateUri="https://dev.blaze.stream/" RequestNavigate="Hyperlink_RequestNavigate">
+                        <TextBlock Text="Open Blaze Developer Console"/>
+                    </ui:HyperlinkButton>
+                </ui:SimpleStackPanel>
+            </DockPanel>
+        </Grid>
     </Grid>
 </UserControl>
