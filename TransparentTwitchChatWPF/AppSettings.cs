@@ -253,6 +253,7 @@ public class GeneralSettings
 
     // Blaze Stream settings
     public string BlazeChannel { get; set; } = string.Empty;
+    public int BlazeTextSize { get; set; } = 18;
 }
 
 public class jChatConfig

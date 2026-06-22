@@ -156,6 +156,13 @@
                     <Label Content="Channel Name" HorizontalAlignment="Left" FontWeight="Bold"/>
                     <TextBox Name="tbBlazeChannel" HorizontalAlignment="Left" Height="23" Width="240"
                              TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="channel username" />
+                    <Label Content="Text Size" HorizontalAlignment="Left" FontWeight="Bold" Margin="0,8,0,0"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Slider Name="slBlazeTextSize" Minimum="12" Maximum="36" Value="18"
+                                Width="200" IsSnapToTickEnabled="True" TickFrequency="1"
+                                ValueChanged="slBlazeTextSize_ValueChanged" />
+                        <TextBlock Name="lblBlazeTextSize" Text="18px" VerticalAlignment="Center" Width="40" />
+                    </StackPanel>
                 </ui:SimpleStackPanel>
             </DockPanel>
         </Grid>

@@ -106,6 +106,8 @@ public partial class ChatSettingsPage : UserControl
             {
                 this.blazeChatGrid.Visibility = Visibility.Visible;
                 this.tbBlazeChannel.Text = App.Settings.GeneralSettings.BlazeChannel;
+                this.slBlazeTextSize.Value = App.Settings.GeneralSettings.BlazeTextSize;
+                this.lblBlazeTextSize.Text = App.Settings.GeneralSettings.BlazeTextSize + "px";
             }
         }
     }
@@ -181,6 +183,7 @@ public partial class ChatSettingsPage : UserControl
             else if (chatType == ChatTypes.BlazeChat)
             {
                 App.Settings.GeneralSettings.BlazeChannel = this.tbBlazeChannel.Text;
+                App.Settings.GeneralSettings.BlazeTextSize = (int)this.slBlazeTextSize.Value;
             }
         }
     }
@@ -337,6 +340,8 @@ public partial class ChatSettingsPage : UserControl
             case ChatTypes.BlazeChat:
                 this.blazeChatGrid.Visibility = Visibility.Visible;
                 this.tbBlazeChannel.Text = App.Settings.GeneralSettings.BlazeChannel;
+                this.slBlazeTextSize.Value = App.Settings.GeneralSettings.BlazeTextSize;
+                this.lblBlazeTextSize.Text = App.Settings.GeneralSettings.BlazeTextSize + "px";
                 break;
         }
     }
@@ -488,4 +493,9 @@ public partial class ChatSettingsPage : UserControl
         tbPopoutCSS.IsReadOnly = useDefaultCss;
     }
 
+    private void slBlazeTextSize_ValueChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (lblBlazeTextSize != null)
+            lblBlazeTextSize.Text = (int)e.NewValue + "px";
+    }
 }

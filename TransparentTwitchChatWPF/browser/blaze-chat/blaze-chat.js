@@ -14,7 +14,8 @@
         channelId: '',
         clientId: '',
         accessToken: '',
-        fadeTimeout: 0
+        fadeTimeout: 0,
+        textSize: 18
     };
 
     let socket = null;
@@ -296,6 +297,10 @@
             config.clientId = message.payload.clientId || '';
             config.accessToken = message.payload.accessToken || '';
             config.fadeTimeout = message.payload.fadeTimeout || 0;
+            config.textSize = message.payload.textSize || 18;
+
+            // Apply text size to chat container
+            document.getElementById('chat_container').style.fontSize = config.textSize + 'px';
 
             console.log('[BlazeChat] clientId:', config.clientId ? 'present' : 'MISSING',
                 'token:', config.accessToken ? 'present' : 'MISSING');
