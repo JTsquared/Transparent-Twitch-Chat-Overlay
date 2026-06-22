@@ -29,6 +29,8 @@ public class BlazeChatProvider : IChatProvider
         var payload = new
         {
             Channel = s.BlazeChannel,
+            TwitchChannel = s.TwitchChannel,
+            KickChannel = s.KickChannel,
             ClientId = BlazeCredentialManager.ClientId,
             AccessToken = accessToken ?? "",
             TextSize = s.BlazeTextSize,

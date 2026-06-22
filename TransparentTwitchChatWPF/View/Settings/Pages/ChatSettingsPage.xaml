@@ -151,12 +151,24 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto">
             <DockPanel Margin="10">
                 <ui:SimpleStackPanel DockPanel.Dock="Top" Margin="10" Spacing="8">
-                    <Label Content="Blaze Stream Chat" HorizontalAlignment="Left" FontWeight="Bold" FontSize="16"/>
+                    <Label Content="SUCO - Unified Chat" HorizontalAlignment="Left" FontWeight="Bold" FontSize="16"/>
                     <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="Gray"
-                               Text="Display real-time chat from a Blaze Stream channel." />
-                    <Label Content="Channel Name" HorizontalAlignment="Left" FontWeight="Bold"/>
+                               Text="Chat from all connected platforms will appear in a single overlay." />
+
+                    <Separator Margin="0,6,0,2"/>
+                    <Label Content="Platforms" HorizontalAlignment="Left" FontWeight="Bold" FontSize="14"/>
+
+                    <Label Content="Blaze Channel" HorizontalAlignment="Left" FontWeight="Bold"/>
                     <TextBox Name="tbBlazeChannel" HorizontalAlignment="Left" Height="23" Width="240"
-                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="channel username" />
+                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="blaze username" />
+
+                    <Label Content="Twitch Channel" HorizontalAlignment="Left" FontWeight="Bold"/>
+                    <TextBox Name="tbTwitchChannel" HorizontalAlignment="Left" Height="23" Width="240"
+                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="twitch username (optional)" />
+
+                    <Label Content="Kick Channel" HorizontalAlignment="Left" FontWeight="Bold"/>
+                    <TextBox Name="tbKickChannel" HorizontalAlignment="Left" Height="23" Width="240"
+                             TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="kick username (optional)" />
 
                     <Separator Margin="0,6,0,2"/>
                     <Label Content="Appearance" HorizontalAlignment="Left" FontWeight="Bold" FontSize="14"/>

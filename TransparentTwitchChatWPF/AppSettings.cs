@@ -260,6 +260,8 @@ public class GeneralSettings
     public string BlazeFontFamily { get; set; } = "Noto Sans";
     public string BlazeTextColor { get; set; } = "#ffffff";
     public int BlazeFadeTimeout { get; set; } = 0;
+    public string TwitchChannel { get; set; } = string.Empty;
+    public string KickChannel { get; set; } = string.Empty;
 }
 
 public class jChatConfig

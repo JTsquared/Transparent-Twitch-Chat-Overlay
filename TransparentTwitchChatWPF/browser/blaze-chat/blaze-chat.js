@@ -1,375 +1,275 @@
-// Blaze Chat Overlay Client
-// Connects to Blaze Stream EventSub via Socket.IO for real-time chat messages.
-// Modeled after the working BlazeEventSub.js from blaze_games.
+// SUCO - Stream Unified Chat Overlay Client
+// Connects to Blaze, Twitch, and Kick chat simultaneously.
+// Renders all messages in a single unified view with platform badges.
 
 (function () {
     'use strict';
 
-    const MAX_MESSAGES = 50;
-    const API_BASE = 'https://api.blaze.stream/v1';
-    const SOCKET_URL = 'https://blaze.stream';
-    const SOCKET_PATH = '/ws';
+    var MAX_MESSAGES = 50;
+    var API_BASE = 'https://api.blaze.stream/v1';
+    var KICK_PUSHER_KEY = '32cbd69e4b950bf97679';
+    var KICK_PUSHER_URL = 'wss://ws-us2.pusher.com/app/' + KICK_PUSHER_KEY + '?protocol=7&client=js&version=8.4.0-rc2&flash=false';
 
-    let config = {
-        channelId: '',
-        clientId: '',
-        accessToken: '',
-        fadeTimeout: 0
+    var config = {
+        channelId: '', clientId: '', accessToken: '',
+        fadeTimeout: 0, textColor: '#ffffff', bgEnabled: false, bgOpacity: 50
     };
 
-    let socket = null;
-    let sessionId = null;
-    const blazeChatHost = window.chrome && window.chrome.webview ? window.chrome.webview : null;
+    var blazeSocket = null;
+    var blazeSessionId = null;
+    var twitchSocket = null;
+    var kickSocket = null;
+    var isConfiguring = false;
+    var blazeChatHost = window.chrome && window.chrome.webview ? window.chrome.webview : null;
 
-    // --- Status display ---
-
-    function showStatus(text, duration) {
-        const el = document.getElementById('status_text');
-        el.textContent = text;
-        el.classList.add('visible');
-        if (duration > 0) {
-            setTimeout(function () { el.classList.remove('visible'); }, duration);
-        }
+    // --- Status ---
+    function showStatus(text, dur) {
+        var el = document.getElementById('status_text');
+        el.textContent = text; el.classList.add('visible');
+        if (dur > 0) setTimeout(function () { el.classList.remove('visible'); }, dur);
     }
 
-    // --- Chat rendering ---
+    // --- Rendering ---
+    function escapeHtml(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
 
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
+    function getUserColor(name) {
+        var h = 0; for (var i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+        return 'hsl(' + (Math.abs(h) % 360) + ', 70%, 65%)';
     }
 
-    function getUserColor(username) {
-        var hash = 0;
-        for (var i = 0; i < username.length; i++) {
-            hash = username.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return 'hsl(' + (Math.abs(hash) % 360) + ', 70%, 65%)';
-    }
-
-    function renderBadges(roles) {
-        var html = '';
-        if (!roles || !Array.isArray(roles)) return html;
-        if (roles.includes('moderator')) html += '<span class="badge badge-mod" title="Moderator">M</span>';
-        if (roles.includes('vip'))       html += '<span class="badge badge-vip" title="VIP">V</span>';
-        if (roles.includes('og'))        html += '<span class="badge badge-og" title="OG">OG</span>';
-        if (roles.includes('subscriber'))html += '<span class="badge badge-sub" title="Subscriber">S</span>';
-        return html;
-    }
-
-    function renderPlatformBadge(platform) {
-        var p = (platform || 'blaze').toLowerCase();
-        return '<span class="platform-badge platform-' + p + '">' + p.toUpperCase() + '</span>';
-    }
-
-    function addChatMessage(payload, platform) {
+    function addMessage(platform, displayName, text, nameColor, messageId) {
         var container = document.getElementById('chat_container');
-        var sender = payload.sender || {};
-        var displayName = sender.displayName || sender.username || 'Anonymous';
-        var color = getUserColor(displayName);
-        var badges = renderBadges(sender.roles);
-        var text = escapeHtml(payload.message || '');
-        var platformBadge = renderPlatformBadge(platform || 'blaze');
+        var color = nameColor || getUserColor(displayName);
+        var textColor = config.textColor || '#ffffff';
 
         var line = document.createElement('div');
-        line.className = 'chat-line';
-        if (config.bgEnabled) line.style.textShadow = 'none';
-        line.dataset.messageId = payload.messageId || '';
+        line.className = 'chat-line' + (config.bgEnabled ? ' no-shadow' : '');
+        if (messageId) line.dataset.messageId = messageId;
         line.innerHTML =
-            platformBadge +
-            badges +
+            '<span class="platform-badge platform-' + platform + '">' + platform.toUpperCase() + '</span>' +
             '<span class="username" style="color:' + color + '">' + escapeHtml(displayName) + '</span>' +
             '<span class="separator">: </span>' +
-            '<span class="message-text" style="color:' + (config.textColor || '#ffffff') + '">' + text + '</span>';
+            '<span class="message-text" style="color:' + textColor + '">' + escapeHtml(text) + '</span>';
 
         container.appendChild(line);
-
-        while (container.children.length > MAX_MESSAGES) {
-            container.removeChild(container.firstChild);
-        }
+        while (container.children.length > MAX_MESSAGES) container.removeChild(container.firstChild);
         container.scrollTop = container.scrollHeight;
 
         if (config.fadeTimeout > 0) {
             setTimeout(function () {
                 line.classList.add('fading');
-                setTimeout(function () {
-                    if (line.parentNode) line.parentNode.removeChild(line);
-                }, 1000);
+                setTimeout(function () { if (line.parentNode) line.parentNode.removeChild(line); }, 1000);
             }, config.fadeTimeout * 1000);
         }
     }
 
-    function handleMessageDelete(payload) {
-        var el = payload.messageId ? document.querySelector('[data-message-id="' + payload.messageId + '"]') : null;
-        if (el) {
-            el.classList.add('fading');
-            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+    function applyAppearance(p) {
+        var c = document.getElementById('chat_container');
+        c.style.fontSize = (p.textSize || 18) + 'px';
+        c.style.fontFamily = "'" + (p.fontFamily || 'Noto Sans') + "', sans-serif";
+        config.textColor = p.textColor || '#ffffff';
+        config.bgEnabled = !!p.bgEnabled;
+        config.bgOpacity = p.bgOpacity || 50;
+        config.fadeTimeout = p.fadeTimeout || 0;
+
+        if (config.bgEnabled) {
+            document.body.style.background = 'rgba(0,0,0,' + (config.bgOpacity / 100) + ')';
+        } else {
+            document.body.style.background = 'transparent';
         }
     }
 
-    function handleChatClear() {
-        document.getElementById('chat_container').innerHTML = '';
-    }
-
-    // --- Resolve channel slug to channel UUID ---
-
-    async function resolveChannelId(channelName) {
-        if (!config.clientId || !config.accessToken) return null;
-
+    // ===================== BLAZE =====================
+    async function blazeSubscribe(type, channelId) {
         try {
-            var url = API_BASE + '/channels?slug[]=' + encodeURIComponent(channelName);
-            console.log('[BlazeChat] Resolving channel via:', url);
-
-            var response = await fetch(url, {
-                headers: {
-                    'Authorization': 'Bearer ' + config.accessToken,
-                    'Client-Id': config.clientId,
-                    'Accept': 'application/json'
-                }
-            });
-
-            console.log('[BlazeChat] Channel lookup status:', response.status);
-
-            if (!response.ok) {
-                var errText = await response.text();
-                console.error('[BlazeChat] Channel lookup failed:', response.status, errText);
-                return null;
-            }
-
-            var data = await response.json();
-            console.log('[BlazeChat] Channel lookup result:', JSON.stringify(data).substring(0, 500));
-
-            // Blaze API returns { success, data: { count, rows: [...] } }
-            if (data.data && data.data.rows && data.data.rows.length > 0) return data.data.rows[0].id;
-            // Fallback: try other shapes
-            var channels = data.channels || data.data || data;
-            if (Array.isArray(channels) && channels.length > 0) return channels[0].id;
-            if (data && data.id) return data.id;
-            return null;
-        } catch (err) {
-            console.error('[BlazeChat] Failed to resolve channel:', err);
-            return null;
-        }
-    }
-
-    // --- Socket.IO EventSub (matches working BlazeEventSub.js pattern) ---
-
-    async function subscribeToEvent(type, channelId) {
-        try {
-            console.log('[BlazeChat] Subscribing to', type, 'for channel', channelId);
-            var response = await fetch(API_BASE + '/events/subscriptions', {
+            var r = await fetch(API_BASE + '/events/subscriptions', {
                 method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + config.accessToken,
-                    'Client-Id': config.clientId,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: type,
-                    version: '1',
-                    sessionId: sessionId,
-                    condition: { channelId: channelId }
-                })
+                headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Client-Id': config.clientId, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ type: type, version: '1', sessionId: blazeSessionId, condition: { channelId: channelId } })
             });
-
-            if (!response.ok) {
-                var errBody = await response.text();
-                console.error('[BlazeChat] Subscribe failed for', type, '(' + response.status + '):', errBody.substring(0, 200));
-                return false;
-            }
-
-            console.log('[BlazeChat] Subscribed to', type);
-            return true;
-        } catch (err) {
-            console.error('[BlazeChat] Subscribe error for', type, ':', err);
-            return false;
-        }
+            return r.ok;
+        } catch (e) { return false; }
     }
 
-    function connectSocket() {
-        if (socket) {
-            socket.disconnect();
-            socket = null;
-        }
+    function connectBlaze(channelId) {
+        if (blazeSocket) { blazeSocket.disconnect(); blazeSocket = null; }
+        blazeSessionId = null;
+        console.log('[Blaze] Connecting...');
 
-        sessionId = null;
-        showStatus('Connecting to Blaze chat...', 0);
-        console.log('[BlazeChat] Connecting Socket.IO to', SOCKET_URL, 'path:', SOCKET_PATH);
-
-        // Match the working BlazeEventSub.js connection pattern exactly
-        socket = io(SOCKET_URL, {
-            path: SOCKET_PATH,
-            transports: ['websocket'],
-            upgrade: false,
-            auth: {
-                token: 'Bearer ' + config.accessToken
-            },
-            reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 30000
+        blazeSocket = io('https://blaze.stream', {
+            path: '/ws', transports: ['websocket'], upgrade: false,
+            auth: { token: 'Bearer ' + config.accessToken },
+            reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000
         });
 
-        socket.on('connect', function () {
-            console.log('[BlazeChat] Socket.IO connected, waiting for session_welcome...');
-        });
-
-        socket.on('disconnect', function (reason) {
-            console.log('[BlazeChat] Socket.IO disconnected:', reason);
-            showStatus('Disconnected. Reconnecting...', 5000);
-            sessionId = null;
-        });
-
-        socket.on('connect_error', function (err) {
-            console.error('[BlazeChat] Socket.IO connection error:', err.message);
-            showStatus('Connection error: ' + err.message, 5000);
-        });
-
-        // Listen for EventSub messages
-        socket.on('eventsub', async function (data) {
+        blazeSocket.on('eventsub', async function (data) {
             if (!data || !data.metadata) return;
+            if (data.metadata.messageType === 'session_welcome') {
+                blazeSessionId = data.payload ? data.payload.sessionId : null;
+                if (blazeSessionId) {
+                    await blazeSubscribe('channel.chat.message', channelId);
+                    console.log('[Blaze] Subscribed to chat');
+                }
+            } else if (data.metadata.messageType === 'notification') {
+                var p = data.payload || {};
+                if (data.metadata.subscriptionType === 'channel.chat.message' && p.sender && p.message) {
+                    addMessage('blaze', p.sender.displayName || p.sender.username || 'Anon', p.message, null, p.messageId);
+                }
+            }
+        });
 
-            var messageType = data.metadata.messageType;
+        blazeSocket.on('connect_error', function (e) { console.error('[Blaze] Error:', e.message); });
+    }
 
-            if (messageType === 'session_welcome') {
-                // Match working code: payload.sessionId (not payload.session.id)
-                sessionId = data.payload ? data.payload.sessionId : null;
+    async function resolveBlaze(slug) {
+        try {
+            var r = await fetch(API_BASE + '/channels?slug[]=' + encodeURIComponent(slug), {
+                headers: { 'Authorization': 'Bearer ' + config.accessToken, 'Client-Id': config.clientId, 'Accept': 'application/json' }
+            });
+            if (!r.ok) return null;
+            var d = await r.json();
+            return (d.data && d.data.rows && d.data.rows.length > 0) ? d.data.rows[0].id : null;
+        } catch (e) { return null; }
+    }
 
-                if (!sessionId) {
-                    console.error('[BlazeChat] No sessionId in welcome:', JSON.stringify(data));
-                    showStatus('Failed to get session ID', 5000);
+    // ===================== TWITCH =====================
+    function connectTwitch(channel) {
+        channel = channel.toLowerCase().replace('#', '');
+        if (twitchSocket) { try { twitchSocket.close(); } catch(e){} twitchSocket = null; }
+        console.log('[Twitch] Connecting to #' + channel);
+
+        var nick = 'justinfan' + Math.floor(Math.random() * 99999);
+        twitchSocket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+        twitchSocket.onopen = function () {
+            twitchSocket.send('NICK ' + nick);
+            twitchSocket.send('CAP REQ :twitch.tv/tags');
+            twitchSocket.send('JOIN #' + channel);
+            console.log('[Twitch] Joined #' + channel);
+        };
+
+        twitchSocket.onmessage = function (event) {
+            var lines = event.data.split('\r\n');
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                if (!line) continue;
+                if (line.startsWith('PING')) { twitchSocket.send('PONG' + line.substring(4)); continue; }
+                if (line.indexOf('PRIVMSG') === -1) continue;
+
+                var tags = {};
+                var rest = line;
+                if (rest.startsWith('@')) {
+                    var tagEnd = rest.indexOf(' ');
+                    rest.substring(1, tagEnd).split(';').forEach(function (t) { var kv = t.split('='); tags[kv[0]] = kv[1] || ''; });
+                    rest = rest.substring(tagEnd + 1);
+                }
+
+                var msgIdx = rest.indexOf(' PRIVMSG ');
+                if (msgIdx === -1) continue;
+                var afterPrivmsg = rest.substring(msgIdx + 9);
+                var textIdx = afterPrivmsg.indexOf(' :');
+                if (textIdx === -1) continue;
+
+                addMessage('twitch', tags['display-name'] || 'Anonymous', afterPrivmsg.substring(textIdx + 2), tags['color'] || null, tags['id']);
+            }
+        };
+
+        twitchSocket.onclose = function () {
+            console.log('[Twitch] Disconnected, reconnecting in 5s...');
+            setTimeout(function () { connectTwitch(channel); }, 5000);
+        };
+    }
+
+    // ===================== KICK =====================
+    async function resolveKickChatroom(username) {
+        try {
+            var r = await fetch('https://kick.com/api/v2/channels/' + encodeURIComponent(username));
+            if (!r.ok) return null;
+            var d = await r.json();
+            return d.chatroom ? d.chatroom.id : null;
+        } catch (e) { return null; }
+    }
+
+    function connectKick(chatroomId) {
+        if (kickSocket) { try { kickSocket.close(); } catch(e){} kickSocket = null; }
+        console.log('[Kick] Connecting to chatroom ' + chatroomId);
+
+        kickSocket = new WebSocket(KICK_PUSHER_URL);
+
+        kickSocket.onmessage = function (event) {
+            try {
+                var msg = JSON.parse(event.data);
+                if (msg.event === 'pusher:connection_established') {
+                    kickSocket.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel: 'chatrooms.' + chatroomId } }));
+                    console.log('[Kick] Subscribed');
                     return;
                 }
-
-                console.log('[BlazeChat] Session established:', sessionId);
-
-                // Subscribe to chat events
-                var chatOk = await subscribeToEvent('channel.chat.message', config.channelId);
-                await subscribeToEvent('channel.chat.message_delete', config.channelId);
-                await subscribeToEvent('channel.chat.clear', config.channelId);
-
-                if (chatOk) {
-                    showStatus('Connected to Blaze chat', 3000);
-                } else {
-                    showStatus('Failed to subscribe to chat events', 5000);
+                if (msg.event === 'App\\Events\\ChatMessageEvent' || msg.event === 'App\\Events\\ChatMessageSentEvent') {
+                    var data = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+                    var username = (data.sender && data.sender.username) || (data.user && data.user.username) || 'Anon';
+                    var text = data.content || data.message || '';
+                    if (text) addMessage('kick', username, text, null, data.id);
                 }
-            }
-            else if (messageType === 'notification') {
-                var subType = data.metadata.subscriptionType;
-                var payload = data.payload || {};
+            } catch (e) {}
+        };
 
-                if (subType === 'channel.chat.message') {
-                    addChatMessage(payload);
-                } else if (subType === 'channel.chat.message_delete') {
-                    handleMessageDelete(payload);
-                } else if (subType === 'channel.chat.clear') {
-                    handleChatClear();
-                }
-            }
-        });
+        kickSocket.onclose = function () {
+            console.log('[Kick] Disconnected, reconnecting in 5s...');
+            setTimeout(function () { connectKick(chatroomId); }, 5000);
+        };
     }
 
-    // --- C# bridge communication ---
-
-    console.log('[BlazeChat] Script loaded, host bridge:', blazeChatHost ? 'available' : 'unavailable');
-
-    var isConfiguring = false;
+    // ===================== C# BRIDGE =====================
+    console.log('[SUCO] Script loaded, host bridge:', blazeChatHost ? 'available' : 'unavailable');
 
     if (blazeChatHost) {
         blazeChatHost.addEventListener('message', function (event) {
             var message = event.data;
-            console.log('[BlazeChat] Received message type:', message.type);
-
-            if (message.type !== 'blazeConfig') {
-                console.warn('[BlazeChat] Unknown message type:', message.type);
-                return;
-            }
-
-            // Guard against duplicate config processing
-            if (isConfiguring) {
-                console.log('[BlazeChat] Already configuring, skipping duplicate');
-                return;
-            }
+            if (message.type !== 'blazeConfig') return;
+            if (isConfiguring) return;
             isConfiguring = true;
 
-            config.clientId = message.payload.clientId || '';
-            config.accessToken = message.payload.accessToken || '';
-            config.fadeTimeout = message.payload.fadeTimeout || 0;
-            config.textSize = message.payload.textSize || 18;
-            config.fontFamily = message.payload.fontFamily || 'Noto Sans';
-            config.textColor = message.payload.textColor || '#ffffff';
-            config.bgEnabled = !!message.payload.bgEnabled;
-            config.bgOpacity = message.payload.bgOpacity || 50;
+            var p = message.payload;
+            config.clientId = p.clientId || '';
+            config.accessToken = p.accessToken || '';
+            applyAppearance(p);
 
-            // Apply appearance settings
-            var container = document.getElementById('chat_container');
-            container.style.fontSize = config.textSize + 'px';
-            container.style.fontFamily = "'" + config.fontFamily + "', sans-serif";
+            console.log('[SUCO] Config received');
 
-            if (config.bgEnabled) {
-                document.body.style.background = 'rgba(0,0,0,' + (config.bgOpacity / 100) + ')';
-            } else {
-                document.body.style.background = 'transparent';
-            }
-
-            console.log('[BlazeChat] clientId:', config.clientId ? 'present' : 'MISSING',
-                'token:', config.accessToken ? 'present' : 'MISSING');
-
-            var channelInput = message.payload.channel || '';
-            console.log('[BlazeChat] Channel input:', channelInput);
-
-            // Wrap async work in a function so errors are visible
             (async function () {
                 try {
-                    // If it looks like a UUID, use directly; otherwise resolve slug to UUID
-                    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(channelInput)) {
-                        config.channelId = channelInput;
-                        console.log('[BlazeChat] Channel is UUID:', config.channelId);
-                    } else if (channelInput) {
-                        showStatus('Resolving channel: ' + channelInput + '...', 0);
-                        console.log('[BlazeChat] Resolving slug:', channelInput);
-                        var resolved = await resolveChannelId(channelInput);
-                        if (resolved) {
-                            config.channelId = resolved;
-                            console.log('[BlazeChat] Resolved to UUID:', config.channelId);
-                        } else {
-                            showStatus('Could not find channel: ' + channelInput, 5000);
-                            console.error('[BlazeChat] Channel resolution failed for:', channelInput);
-                            isConfiguring = false;
-                            return;
-                        }
-                    } else {
-                        console.error('[BlazeChat] No channel provided');
-                        isConfiguring = false;
-                        return;
+                    var connected = [];
+
+                    // Blaze
+                    var blazeCh = p.channel || '';
+                    if (blazeCh && config.accessToken) {
+                        var blazeId = await resolveBlaze(blazeCh);
+                        if (blazeId) { connectBlaze(blazeId); connected.push('Blaze'); }
+                        else console.error('[Blaze] Could not resolve:', blazeCh);
                     }
 
-                    if (config.channelId && config.accessToken) {
-                        console.log('[BlazeChat] All ready, connecting Socket.IO...');
-                        connectSocket();
-                    } else {
-                        console.error('[BlazeChat] Missing -',
-                            !config.channelId ? 'channelId' : '',
-                            !config.accessToken ? 'accessToken' : '');
-                        showStatus('Missing channel or credentials', 5000);
+                    // Twitch
+                    var twitchCh = p.twitchChannel || '';
+                    if (twitchCh) { connectTwitch(twitchCh); connected.push('Twitch'); }
+
+                    // Kick
+                    var kickCh = p.kickChannel || '';
+                    if (kickCh) {
+                        var kickRoom = await resolveKickChatroom(kickCh);
+                        if (kickRoom) { connectKick(kickRoom); connected.push('Kick'); }
+                        else console.error('[Kick] Could not resolve:', kickCh);
                     }
+
+                    if (connected.length > 0) showStatus('Connected: ' + connected.join(', '), 3000);
+                    else showStatus('No platforms configured', 5000);
                 } catch (err) {
-                    console.error('[BlazeChat] Configuration error:', err);
+                    console.error('[SUCO] Error:', err);
                     showStatus('Error: ' + err.message, 5000);
                 }
                 isConfiguring = false;
             })();
         });
 
-        // Notify C# host that we're ready to receive config
-        blazeChatHost.postMessage({
-            type: 'BlazeChatReady',
-            protocolVersion: 1
-        });
-    } else {
-        console.warn('[BlazeChat] Host bridge unavailable (standalone mode)');
-        showStatus('No host bridge', 0);
+        blazeChatHost.postMessage({ type: 'BlazeChatReady', protocolVersion: 1 });
     }
 })();
