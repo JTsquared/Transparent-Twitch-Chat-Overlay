@@ -156,6 +156,8 @@
                     <Label Content="Channel Name" HorizontalAlignment="Left" FontWeight="Bold"/>
                     <TextBox Name="tbBlazeChannel" HorizontalAlignment="Left" Height="23" Width="240"
                              TextWrapping="NoWrap" ui:ControlHelper.PlaceholderText="channel username" />
+                    <CheckBox Name="cbBlazeChatBackground" Content="Semi-transparent background (easier to read on light games)"
+                              HorizontalAlignment="Left" Margin="0,8,0,0" />
                     <Label Content="Text Size" HorizontalAlignment="Left" FontWeight="Bold" Margin="0,8,0,0"/>
                     <ui:SimpleStackPanel Orientation="Horizontal" Spacing="10">
                         <Slider Name="slBlazeTextSize" Minimum="12" Maximum="36" Value="18"

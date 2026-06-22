@@ -33,7 +33,8 @@ public class BlazeChatProvider : IChatProvider
             FadeTimeout = App.Settings.GeneralSettings.FadeChat
                 ? int.TryParse(App.Settings.GeneralSettings.FadeTime, out var ft) ? ft : 0
                 : 0,
-            TextSize = App.Settings.GeneralSettings.BlazeTextSize
+            TextSize = App.Settings.GeneralSettings.BlazeTextSize,
+            ShowBackground = App.Settings.GeneralSettings.BlazeChatBackground
         };
 
         var options = new JsonSerializerOptions

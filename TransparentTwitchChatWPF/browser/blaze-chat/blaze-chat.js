@@ -299,8 +299,16 @@
             config.fadeTimeout = message.payload.fadeTimeout || 0;
             config.textSize = message.payload.textSize || 18;
 
-            // Apply text size to chat container
-            document.getElementById('chat_container').style.fontSize = config.textSize + 'px';
+            config.showBackground = message.payload.showBackground || false;
+
+            // Apply text size and background to chat container
+            var container = document.getElementById('chat_container');
+            container.style.fontSize = config.textSize + 'px';
+            if (config.showBackground) {
+                container.classList.add('with-background');
+            } else {
+                container.classList.remove('with-background');
+            }
 
             console.log('[BlazeChat] clientId:', config.clientId ? 'present' : 'MISSING',
                 'token:', config.accessToken ? 'present' : 'MISSING');
