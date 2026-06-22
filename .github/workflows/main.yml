@@ -1,6 +1,5 @@
-name: Create Velopack Release
+name: Build and Release SUCO
 
-# This workflow runs when a new tag is pushed that starts with 'v'
 on:
   push:
     tags:
@@ -8,32 +7,40 @@ on:
 
 jobs:
   build-and-pack:
-    # Use the latest Windows runner
     runs-on: windows-latest
-    # To allow github to upload the release files
     permissions:
       contents: write
 
     steps:
-      # 1. Check out the code from the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Set up the .NET SDK on the runner
+      # Build NativeChatClient (required before WPF build)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build NativeChatClient
+        run: |
+          cd NativeChatClient
+          npm ci
+          npm run build
+        shell: pwsh
+
+      # Build WPF app
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # Use the .NET version your project needs
+          dotnet-version: '8.0.x'
 
-      # 3. Restore project's dependencies
       - name: Restore dependencies
         run: dotnet restore
 
-      # 4. Build application for release
-      - name: Build and publish application
-        run: dotnet publish -c Release -o publish -r win-x64 --self-contained true
-        
-      # 5. Get the version number from the Git tag
+      - name: Publish application
+        run: dotnet publish TransparentTwitchChatWPF/TransparentTwitchChatWPF.csproj -c Release -o publish -r win-x64 --self-contained true
+
+      # Extract version from tag
       - name: Get version from tag
         id: get-version
         run: |
@@ -41,13 +48,13 @@ jobs:
             echo "version=$version" >> $env:GITHUB_OUTPUT
         shell: pwsh
 
-      # 6. Download, Pack, and Upload with Velopack
+      # Package and upload with Velopack
       - name: Create and Upload Velopack Release
         run: |
           dotnet tool install -g vpk
           vpk download github --repoUrl https://github.com/${{ github.repository }}
-          vpk pack -u TransparentTwitchChat -v ${{ steps.get-version.outputs.version }} --packDir publish --mainExe TransparentTwitchChatWPF.exe
-          vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "Release v${{ steps.get-version.outputs.version }}" --tag ${{ github.ref_name }} --token ${{ secrets.GITHUB_TOKEN }}
+          vpk pack -u SUCO -v ${{ steps.get-version.outputs.version }} --packDir publish --mainExe TransparentTwitchChatWPF.exe
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "SUCO v${{ steps.get-version.outputs.version }}" --tag ${{ github.ref_name }} --token ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
