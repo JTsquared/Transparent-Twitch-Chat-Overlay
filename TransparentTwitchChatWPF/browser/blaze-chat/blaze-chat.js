@@ -132,7 +132,9 @@
             var data = await response.json();
             console.log('[BlazeChat] Channel lookup result:', JSON.stringify(data).substring(0, 500));
 
-            // Try various response shapes
+            // Blaze API returns { success, data: { count, rows: [...] } }
+            if (data.data && data.data.rows && data.data.rows.length > 0) return data.data.rows[0].id;
+            // Fallback: try other shapes
             var channels = data.channels || data.data || data;
             if (Array.isArray(channels) && channels.length > 0) return channels[0].id;
             if (data && data.id) return data.id;
